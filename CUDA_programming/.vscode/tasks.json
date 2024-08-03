@@ -1,0 +1,20 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build cuda",
+            "type": "shell",
+            "command": "/usr/local/cuda/bin/nvcc",
+            "args": [
+                "${file}",  // Use ${file} to specify the current open file in the editor
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"  // Output executable in the same directory
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}
