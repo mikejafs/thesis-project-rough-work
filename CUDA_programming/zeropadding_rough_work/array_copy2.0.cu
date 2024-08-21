@@ -19,10 +19,7 @@ __global__ void array_copy(int* a, int* b, int arr_size)
     }
 }
 
-//initialize arrays with random entries
-//I'm still not too sure how defining a as a pointer here
-//can lead to the code actually assigning values to a in the main()
-//function....
+//function to initialize arrays with random entries
 void matrix_init(int *a, int n){
     for (int i = 0; i < n; i ++){
         a[i] = rand() % 100;
