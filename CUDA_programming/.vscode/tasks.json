@@ -2,19 +2,31 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build cuda",
+            "label": "build",
             "type": "shell",
-            "command": "/usr/local/cuda/bin/nvcc",
-            "args": [
-                "${file}",  // Use ${file} to specify the current open file in the editor
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"  // Output executable in the same directory
-            ],
+            "command": "nvcc",
+            "args": ["-o", "output", "main.cu"],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": []
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
         }
     ]
 }
