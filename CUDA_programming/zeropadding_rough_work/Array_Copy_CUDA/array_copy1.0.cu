@@ -55,7 +55,18 @@ int main(){
     cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
 
     //thread and grid block sizes
-    int NUM_THREADS = 1 << 8;
+    // int NUM_THREADS = 1 << 8;
+
+    //better to keep the num_threads as a whole number like this for better readability
+    //also best practice to keep NUM_THREADS as a whole number and let the 
+    //NUM_BLOCKS increase/decrease to fit the problem
+    //Finally note that this is really the number of threads per block
+    int NUM_THREADS = 256;
+
+    //Note that doing things this way apeals to the notion of letting the # blocks
+    //increase to fit the problem size, with the added charactaristic of 
+    //not being 0 if arr_size < NUM_THREADS, or having an extra thread block if 
+    //arr_size == n * NUM_THREADS, where n is an integer
     int NUM_BLOCKS = (arr_size + NUM_THREADS - 1) / NUM_THREADS;
 
     //launch kernel
@@ -63,6 +74,7 @@ int main(){
 
     cudaMemcpy(h_b, d_b, bytes, cudaMemcpyDeviceToHost);
 
+    //print out the copied data
     for (int i = 0; i < arr_size; i++){
         printf("%d", h_b[i]);
     }
