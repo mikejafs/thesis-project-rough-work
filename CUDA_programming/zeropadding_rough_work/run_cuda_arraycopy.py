@@ -27,8 +27,8 @@ def Arr_cpy(a, b, arr_size):
 
 if __name__ == '__main__':
     arr_size = 10
-    a = np.random.randint(0, 100, arr_size).astype(np.int32)
-    b = np.zeros(arr_size, dtype=np.int32)
+    a = np.random.randint(0, 100, arr_size).astype(np.float128)
+    b = np.zeros(arr_size, dtype=np.float128)
     Arr_cpy(a, b, arr_size=arr_size)    
     print("The input array was", a)
     print("The output array is", b)
