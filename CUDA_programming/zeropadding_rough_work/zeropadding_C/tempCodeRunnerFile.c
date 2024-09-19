@@ -1,1 +1,1 @@
-    int COLS = 3;
+out_largest_block
