@@ -18,8 +18,6 @@ zp_lib.zeroPad.argtypes = [
 def zeroPad(array, edges):
     array = np.array(array, dtype=np.double)
     edges = np.array(edges, dtype=np.int64)
-    print(array.dtype)
-    print(edges.dtype)
 
     largest_block = np.array(np.diff(edges).max(), dtype = np.int64)
     n_blocks = np.array(edges.size - 1, dtype = np.int64)
@@ -30,13 +28,6 @@ def zeroPad(array, edges):
     #For now things are just 1D
 
     out_array = np.zeros((n_blocks*largest_block), dtype = np.double)
-
-    print("n_blocks:", n_blocks)
-    print("largest_block:", largest_block) 
-    print("Shape of out_array:", out_array.shape)
-
-    assert array.flags['C_CONTIGUOUS']
-    assert out_array.flags['C_CONTIGUOUS']
 
     zp_lib.zeroPad(
         array.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
