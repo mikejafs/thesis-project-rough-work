@@ -70,7 +70,7 @@ int main(){
         for (int j = 0; j < out_cols; j++) {
             printf("%d ", result[i][j]); // Dereferences to get the actual integer value
         }
-        printf("\n");
+        // printf("\n"); //add this if want to print each "block" on a new line
     }
 
     for (int i = 0; i < out_rows; i++) {
