@@ -35,7 +35,7 @@ extern "C"
         //define device variables
         double *d_in_array, *d_out_array;
         long* d_edges;
-        
+
         //allocate memory on the device
         size_t in_array_bytes = in_array_size * sizeof(double);
         size_t out_array_bytes = n_blocks * largest_block * sizeof(double);
