@@ -18,7 +18,6 @@ __global__ void ArrayCopy(int* a, int* b, int arr_size) {
     }
 }
 
-
 void run_array_copy(int* a, int* b, int arr_size) {
     int *d_a, *d_b;
     size_t bytes = arr_size * sizeof(int);

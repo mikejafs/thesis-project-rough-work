@@ -2,7 +2,7 @@
 
 int main(){
     int d = 2;
-    printf("%d\n", d);
+    printf("%zu\n", sizeof(d));
     printf("Welcome");
     return 0;
 }
