@@ -47,12 +47,12 @@ extern "C"
 
         //copy data from host to device
         cudaMemcpy(d_in_array, in_array, in_array_bytes, cudaMemcpyHostToDevice);
-        cudaMemcpy(d_out_array, out_array, out_array_bytes, cudaMemcpyHostToDevice);        
+        // cudaMemcpy(d_out_array, out_array, out_array_bytes, cudaMemcpyHostToDevice); // don't need this since cudaMalloc seems to initialize to 0 
         cudaMemcpy(d_edges, edges, edges_bytes, cudaMemcpyHostToDevice);
 
         //define thread and threadblock sizes & launch kernel
         //Note the prblm is in 2D, so we need a grid of threads
-        dim3 threadsPerBlock(16, 16);
+        dim3 threadsPerBlock(32, 32);
         dim3 numBlocks((n_blocks + threadsPerBlock.x - 1) / threadsPerBlock.x, 
                         (largest_block + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
