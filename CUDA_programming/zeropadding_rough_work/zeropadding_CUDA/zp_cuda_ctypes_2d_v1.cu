@@ -1,35 +1,46 @@
-//nvcc -shared -o zp_cuda_1d.so zp_cuda_ctypes_1d_v1.cu -Xcompiler -fPIC
+//nvcc -shared -o zp_cuda_1d.so zp_cuda_ctypes_2d_v1.cu -Xcompiler -fPIC
 
 #include <stdio.h>
 
 extern "C"
 {
-    __global__ void zeroPad_kernel(
+    __global__ void zeroPad2d_kernel(
         double* in_array,
         double* out_array,
         long* edges,
-        int in_array_size,
+        int in_array_cols,
         int n_blocks,
         int largest_block
     ){
         int blockidx = blockIdx.x*blockDim.x + threadIdx.x;
-        int idx = blockIdx.y*blockDim.y + threadIdx.y;
-        if (blockidx < n_blocks){   
+        int row_idx = blockIdx.y*blockDim.y + threadIdx.y;
+        int col_idx = blockIdx.z*blockDim.z + threadIdx.z;
+
+        // printf("test1");
+        if (blockidx < n_blocks){
             long start = edges[blockidx];
             long stop = edges[blockidx + 1];
             long block_size = stop - start;
-            if (idx < block_size){
-                out_array[blockidx*largest_block + idx] = in_array[start + idx];
-            }
+            if (row_idx < block_size){
+                // printf("test");
+                if (col_idx < in_array_cols){
+                // for (int col_idx = 0; col_idx < in_array_cols; col_idx ++){
+                    // out_array[col_idx][blockidx*largest_block + row_idx] = in_array[col_idx][start + row_idx];
+                    // printf("test");
+                    out_array[in_array_cols*(blockidx*largest_block + row_idx) + col_idx] 
+                    = in_array[in_array_cols*(start + row_idx) + col_idx];
+
+                }
+            } 
         }
     }
-
 
     void zeroPad(
         double* in_array,
         double* out_array,
         long* edges,
-        int in_array_size,
+        int in_array_rows,
+        int in_array_cols,
         int n_blocks,
         int largest_block
     ){
@@ -38,8 +49,8 @@ extern "C"
         long* d_edges;
 
         //allocate memory on the device
-        size_t in_array_bytes = in_array_size * sizeof(double);
-        size_t out_array_bytes = n_blocks * largest_block * sizeof(double);
+        size_t in_array_bytes = in_array_rows * in_array_cols * sizeof(double);
+        size_t out_array_bytes = n_blocks * largest_block * in_array_cols * sizeof(double);
         size_t edges_bytes = (n_blocks + 1) * sizeof(long);
 
         cudaMalloc(&d_edges, edges_bytes);
@@ -53,15 +64,20 @@ extern "C"
 
         //define thread and threadblock sizes & launch kernel
         //Note the prblm is in 2D, so we need a grid of threads
-        dim3 threadsPerBlock(32, 32);
+        dim3 threadsPerBlock(8, 8, in_array_cols);
         dim3 numBlocks((n_blocks + threadsPerBlock.x - 1) / threadsPerBlock.x, 
-                        (largest_block + threadsPerBlock.y - 1) / threadsPerBlock.y);
+                        (largest_block + threadsPerBlock.y - 1) / threadsPerBlock.y,
+                        (in_array_cols + threadsPerBlock.z - 1) / threadsPerBlock.z);
 
-        zeroPad_kernel<<<numBlocks, threadsPerBlock>>>(
+        // dim3 threadsPerBlock(32, 32);
+        // dim3 numBlocks((n_blocks + threadsPerBlock.x - 1) / threadsPerBlock.x, 
+        //                 (largest_block + threadsPerBlock.y - 1) / threadsPerBlock.y);
+                        
+        zeroPad2d_kernel<<<numBlocks, threadsPerBlock>>>(
             d_in_array,
             d_out_array,
             d_edges,
-            in_array_size,
+            in_array_cols,
             n_blocks,
             largest_block 
             );

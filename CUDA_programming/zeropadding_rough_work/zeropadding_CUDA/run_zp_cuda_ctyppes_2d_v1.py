@@ -14,13 +14,15 @@ zp_cuda_lib.zeroPad.argtypes = [
     ctypes.POINTER(ctypes.c_long),
     ctypes.c_int,
     ctypes.c_int,
+    ctypes.c_int,
     ctypes.c_int
 ]
 
 def zeroPad(array, edges):
     array = np.array(array, dtype=np.double)
     edges = np.array(edges, dtype=np.int64)
-    array_size = array.shape[0] 
+    array_rows = array.shape[0]
+    array_cols = array.shape[1]
     largest_block = np.array(np.diff(edges).max(), dtype = np.int32)
     n_blocks = np.array(edges.size - 1, dtype = np.int32)
     
@@ -28,13 +30,14 @@ def zeroPad(array, edges):
     #decide which (1d or 2d) ZP routine to use.
     #For now things are just 1D
 
-    out_array = np.zeros((n_blocks*largest_block), dtype = np.double)
+    out_array = np.zeros((n_blocks*largest_block*array_cols), dtype = np.double)
 
     zp_cuda_lib.zeroPad(
         array.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         out_array.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         edges.ctypes.data_as(ctypes.POINTER(ctypes.c_long)),
-        array_size,
+        array_rows,
+        array_cols,
         n_blocks,
         largest_block
     )
@@ -42,22 +45,31 @@ def zeroPad(array, edges):
 
 if __name__ == "__main__":
     n_bl = 120000
+    n_eig = 10
+    n_ant = 500
     #for more easy to verify case:
     # array = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
     # edges = np.array([0, 2, 9, 14])
 
-    array = np.random.rand(n_bl)
+    # array = np.random.rand(n_bl)
+    array2d = np.random.rand(n_bl, n_eig)
+    flatArray2d = array2d.flatten()
+    # print(array2d)
+    # print(flatArray2d)
+    # print()
     # array = np.random.randint(1, 9, size=n_bl)
 
     #use this array along with the seaborn heatmap if want to check things are working
     # array = np.full(n_bl, 1, dtype=np.double)
 
-    edges = np.unique(np.random.randint(1, n_bl - 1, size = 500))
+    edges = np.unique(np.random.randint(1, n_bl - 1, size = n_ant))
     edges = np.concatenate((np.array([0]), edges, np.array([n_bl], dtype = np.int64)))
-    # zp_array, largest_block, n_blocks = zeroPad(array, edges)
+    # print(edges)
+    zp_array, largest_block, n_blocks = zeroPad(array2d, edges)
+    zp_array = zp_array.reshape(n_blocks*largest_block, n_eig)
 
     # #uncomment if want to time things
-    test_results = str(benchmark(zeroPad, (array, edges), n_repeat=1000))
+    test_results = str(benchmark(zeroPad, (array2d, edges), n_repeat=1000))
     test_results = test_results.split()
     cpu_t = float(test_results[3])/1e6
     gpu_t = float(test_results[14])/1e6
@@ -65,8 +77,8 @@ if __name__ == "__main__":
     print(f"Time on gpu: {gpu_t:.6f}s")
 
     # zp_array = zp_array.reshape(n_blocks, largest_block)
-    # print(zp_array)
+    print(zp_array)
     
     # pull up a clear map of the output array in 2D
-    # sns.heatmap(zp_array)
-    # plt.show()
+    sns.heatmap(zp_array)
+    plt.show()
