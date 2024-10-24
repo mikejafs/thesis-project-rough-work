@@ -47,9 +47,9 @@ extern "C"
         cudaMalloc(&d_out_array, out_array_bytes);
 
         //copy data from host to device
-        cudaMemcpy(d_in_array, in_array, in_array_bytes, cudaMemcpyHostToDevice);
-        // cudaMemcpy(d_out_array, out_array, out_array_bytes, cudaMemcpyHostToDevice); // don't need this since cudaMalloc seems to initialize to 0 
-        cudaMemcpy(d_edges, edges, edges_bytes, cudaMemcpyHostToDevice);
+        // cudaMemcpy(d_in_array, in_array, in_array_bytes, cudaMemcpyHostToDevice);
+        // // cudaMemcpy(d_out_array, out_array, out_array_bytes, cudaMemcpyHostToDevice); // don't need this since cudaMalloc seems to initialize to 0 
+        // cudaMemcpy(d_edges, edges, edges_bytes, cudaMemcpyHostToDevice);
 
         //define thread and threadblock sizes & launch kernel
         //Note the prblm is in 2D, so we need a grid of threads
@@ -68,10 +68,10 @@ extern "C"
         cudaDeviceSynchronize();
 
         //copy data back to the host
-        cudaMemcpy(out_array, d_out_array, out_array_bytes, cudaMemcpyDeviceToHost);
+        // cudaMemcpy(out_array, d_out_array, out_array_bytes, cudaMemcpyDeviceToHost);
 
         //free memory on the device
-        cudaFree(d_in_array);
-        cudaFree(d_out_array);
+        // cudaFree(d_in_array);
+        // cudaFree(d_out_array);
     }
 }
