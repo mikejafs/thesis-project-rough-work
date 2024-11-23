@@ -48,7 +48,7 @@ int main(){
     vector<int> h_b(N * N);
     vector<int> h_c(N * N);
 
-    //Initialize matrices => These are really vectors, but can be thought of as matrices stretched out along 1D
+    //Initialize matrices
     generate(h_a.begin(), h_a.end(), []() {return rand() % 100;});
     generate(h_b.begin(), h_b.end(), []() {return rand() % 100;});
 
