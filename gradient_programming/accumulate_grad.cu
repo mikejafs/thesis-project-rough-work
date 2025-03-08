@@ -25,6 +25,13 @@ extern "C"
             out[2*k2] -= 2 * (gains[2*k1]*s[k] + gains[2*k1+1]*t[k]);
             out[2*k1+1] -= 2 * (gains[2*k2+1]*s[k] + gains[2*k2]*t[k]);
             out[2*k2+1] -= 2 * (gains[2*k1+1]*s[k] - gains[2*k1]*t[k]);
+
+            // Try with atomic add to sidestep memory issues -> Doesn't seem to work...
+            // atomicAdd(&out[2*k1], -2 * (gains[2*k2]*s[k] - gains[2*k2+1]*t[k]));
+            // atomicAdd(&out[2*k2], -2 * (gains[2*k1]*s[k] + gains[2*k1+1]*t[k]));
+            // atomicAdd(&out[2*k1+1], -2 * (gains[2*k2]*s[k] + gains[2*k2]*t[k]));
+            // atomicAdd(&out[2*k2+1], -2 * (gains[2*k1]*s[k] - gains[2*k1]*t[k]));
+
     
             // Compute the product of complex gains.
             double G_kr = gains[2*k1]*gains[2*k2] + gains[2*k1+1]*gains[2*k2+1];
@@ -38,6 +45,11 @@ extern "C"
             out[2*k2] += prefac * (G_kr*gains[2*k1] + G_ki*gains[2*k1+1]);
             out[2*k1+1] += prefac * (G_kr*gains[2*k2+1] + G_ki*gains[2*k2]);
             out[2*k2+1] += prefac * (G_kr*gains[2*k1+1] - G_ki*gains[2*k1]);
+        
+            // atomicAdd(&out[2*k1], prefac*(G_kr*gains[2*k2] - G_ki*gains[2*k2+1]));
+            // atomicAdd(&out[2*k2], prefac*(G_kr*gains[2*k1] - G_ki*gains[2*k1+1]));
+            // atomicAdd(&out[2*k1+1], prefac*(G_kr*gains[2*k2+1] - G_ki*gains[2*k2]));
+            // atomicAdd(&out[2*k2+1], prefac*(G_kr*gains[2*k1+1] - G_ki*gains[2*k1]));
         }
     }
 

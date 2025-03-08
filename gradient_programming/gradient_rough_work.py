@@ -159,11 +159,11 @@ def accumulate_gradient(gains, s, t, P, noise, ant_1_inds, ant_2_inds):
 
     Parameters
     ----------
-    TODO
+    #TODO
 
     Returns
     -------
-    TODO
+    #TODO
     """
     gradient = cp.zeros_like(gains)
     n_bls = ant_1_inds.size
