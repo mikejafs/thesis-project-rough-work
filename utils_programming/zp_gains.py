@@ -223,7 +223,7 @@ if __name__ == "__main__":
     n_eig = 3
     xp = cp  #run things on the gpu using cupy
 
-    #random array of edges for the diffuse matrix
+    #random array of edges for the diffuse
     # edges = xp.unique(xp.random.randint(1, n_bl-1, size = 3))
     # edges = xp.concatenate((xp.array([0]), edges, xp.array([n_bl])))
 
