@@ -120,7 +120,7 @@ def present_simulation_results(
         plt.xlabel('N Trials', fontsize=16)
         plt.ylabel(r'Agreement with CPU $\nabla (-\text{log}\mathcal{L})$', fontsize=16)
         if save_fig:
-            plt.savefig('grad3_truth_for_nant={}.png'.format(n_ant), dpi=300, format='png', bbox_inches='tight')
+            plt.savefig('test_plots/grad3_truth_for_nant={}.png'.format(n_ant), dpi=300, format='png', bbox_inches='tight')
         plt.show()
 
     if plot_comparison:
@@ -133,21 +133,21 @@ def present_simulation_results(
             plt.xlabel("Number of Antennas (Re Im Split)", fontsize=16)
             plt.ylabel(r"$\nabla \mathcal{L}_{gpu} - \nabla \mathcal{L}_{cpu}$", fontsize=16)
         if save_fig:
-            plt.savefig('grad3_difference_for_nant={}.png'.format(n_ant), dpi=300, format='png', bbox_inches='tight')
+            plt.savefig('test_plots/grad3_difference_for_nant={}.png'.format(n_ant), dpi=300, format='png', bbox_inches='tight')
         plt.show()
 
 
 
 if __name__ == "__main__":
 
-    n_ant = 800
+    n_ant = 400
     print(f"Number of antennas being used ={n_ant}")
 
     present_simulation_results(
-        n_trials=20,
+        n_trials=30,
         print_single_check=False,
-        plot_truth_check=True,
-        plot_comparison=False,
-        save_fig=False,
+        plot_truth_check=False,
+        plot_comparison=True,
+        save_fig=True,
         benchmark=False
     )
