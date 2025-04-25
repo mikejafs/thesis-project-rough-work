@@ -44,7 +44,40 @@ def gpu_grad_nll(n_ant,
                  ant_2_array, 
                  xp):
     """
+    Compute the GPU-accelerated gradient of the negative log-likelihood.
 
+    This function zero-pads covariance and gain matrices, applies gains to sky and diffuse models,
+    inverts the total covariance, and assembles the gradient with phase normalization.
+
+    Parameters
+    ----------
+    n_ant : int
+        Number of antennas.
+    gains : xp.ndarray
+        Interleaved real/imag gain vector of length 2*n_ant.
+    data : xp.ndarray
+        Measured visibility data (non zero-padded).
+    scale : float
+        Factor by which to scale the final gradient.
+    phs_norm_fac : float
+        Normalization factor applied to phase regularization.
+    noise : xp.ndarray
+        Noise covariance matrix.
+    diff_mat : xp.ndarray
+        Diffuse-sky covariance matrix.
+    src_mat : xp.ndarray
+        Point-source covariance matrix.
+    edges : array-like
+        Zero-padding specification for matrix dimensions.
+    ant_1_array, ant_2_array : array-like
+        Baseline antenna index pairs for gain mapping.
+    xp : module
+        Array library (e.g., `cupy` or `numpy`) for execution.
+
+    Returns
+    -------
+    xp.ndarray
+        Interleaved real/imag gradient vector of length 2*n_ant, scaled by `scale`.
     """
     #zeropad noise, diffuse, source matrices, and gain matrices
     zp_noise_inv, lb, nb = zeroPad(noise, edges, return_inv=True)
@@ -121,18 +154,37 @@ def gpu_grad_nll(n_ant,
     return gradient/scale
 
 
-def populate_gradient(n_ant, gains, s, t, P, noise, ant_1_inds, ant_2_inds):
-    """Populate the dLdG matrix in parallel using CUDA
 
-    Thin wrapper around the populate CUDA function.
+def populate_gradient(n_ant, gains, s, t, P, noise, ant_1_inds, ant_2_inds):
+    """
+    Compute the real and imaginary parts of the negative log-likelihood gradient matrix.
+
+    Thin Python wrapper around the CUDA `populate_gradient` kernel, which fills
+    the dL/dG matrices for each antenna pair in parallel.
 
     Parameters
     ----------
-    #TODO
+    n_ant : int
+        Number of antennas (matrix dimension).
+    gains : cupy.ndarray
+        Interleaved real/imag gain vector of length 2*n_ant.
+    s : cupy.ndarray
+        Real part of the p·q product for each baseline (length = n_bl).
+    t : cupy.ndarray
+        Imaginary part of the p·q product for each baseline (length = n_bl).
+    P : cupy.ndarray
+        Inverse-power term P[k] = (∑ |inv_cov|²)_k for each baseline (length = n_bl).
+    noise : cupy.ndarray
+        Noise weights for each baseline (length = 2*n_bl).
+    ant_1_inds, ant_2_inds : cupy.ndarray of int64
+        Arrays of length n_bl giving the antenna indices for each baseline.
 
     Returns
     -------
-    #TODO
+    dLdGr : cupy.ndarray, shape (n_ant, n_ant)
+        Real part of the gradient matrix ∂L/∂G.
+    dLdGi : cupy.ndarray, shape (n_ant, n_ant)
+        Imaginary part of the gradient matrix ∂L/∂G.
     """
     dLdGr = cp.zeros((n_ant, n_ant))
     dLdGi = cp.zeros((n_ant, n_ant))
