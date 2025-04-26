@@ -12,8 +12,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import corrcal
 from corrcal import SparseCov
-from cupyx.profiler import benchmark
+from corrcal.optimize import *
 from grad_nll3 import *
+from cupyx.profiler import benchmark
+
 
 def simulate(n_ant, return_benchmark=True):
     #TODO: construct a class for simulating these parameters
@@ -145,9 +147,9 @@ if __name__ == "__main__":
 
     present_simulation_results(
         n_trials=30,
-        print_single_check=False,
-        plot_truth_check=False,
-        plot_comparison=True,
-        save_fig=True,
+        print_single_check=True,
+        plot_truth_check=True,
+        plot_comparison=False,
+        save_fig=False,
         benchmark=False
     )

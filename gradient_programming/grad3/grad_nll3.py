@@ -23,7 +23,6 @@ target_dir = os.path.join(parent_dir, 'corrcal_gpu_pipeline', 'pipeline')
 sys.path.insert(0, target_dir)
 
 import cupy as cp
-from corrcal.optimize import *
 from zp_puregpu_funcs_py import *
 from utils import *
 from invcov import *
@@ -91,10 +90,10 @@ def gpu_grad_nll(n_ant,
     gain_diff_mat = apply_gains(zp_cplex_gain_mat, zp_diff_mat, xp=cp)
     gain_src_mat = apply_gains(zp_cplex_gain_mat, zp_src_mat, xp=cp)
 
-    inv_noise, inv_diff, inv_src = inverse_covariance(zp_noise_inv, gain_diff_mat, gain_src_mat, edges, cp, ret_det=False, N_is_inv=True)
+    inv_noise, inv_diff, inv_src = inverse_covariance(zp_noise_inv, gain_diff_mat, gain_src_mat, cp, ret_det=False, N_is_inv=True)
 
     #Now compute p = C^-1 @ data => Might want to construct my own __matmul__ function for this
-    p = sparse_cov_times_vec(zp_noise, zp_diff_mat, zp_src_mat, inv_noise, inv_diff, inv_src, zp_data, isinv=True, xp=cp)
+    p = sparse_cov_times_vec(inv_noise, inv_diff, inv_src, zp_data, isinv=True)
 
     #compute q = (C - N) @ G.T @ p
     q = p.copy()
@@ -104,7 +103,7 @@ def gpu_grad_nll(n_ant,
     #in computing q, we just make noise = 0 and run the C \times d function
     zp_noise = zp_noise.reshape(nb, lb, 1) #1D mats are left as 2D and not 2D + 1 col so that invcov runs so need to reshape here
     zp_noise = cp.zeros_like(zp_noise)
-    q = sparse_cov_times_vec(zp_noise, zp_diff_mat, zp_src_mat, inv_noise, inv_diff, inv_src, q, isinv=False, xp=cp)
+    q = sparse_cov_times_vec(zp_noise, zp_diff_mat, zp_src_mat, q, isinv=False)
 
     #compute s and t => Note this bring the shape of s & t to 1/2len(p or q)
     zp_s = p[:, ::2]*q[: ,::2] + p[:, 1::2]*q[:, 1::2]
