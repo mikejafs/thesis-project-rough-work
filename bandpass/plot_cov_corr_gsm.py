@@ -50,7 +50,7 @@ def plot_cov_corr(
     #covariance subplot
     im_cov = axes[0].imshow(cov_mat[:,:,ell], origin='upper', 
                         extent=([
-                            freqs[0], freqs[-1], freqs[0], freqs[-1]
+                            freqs[0], freqs[-1], freqs[-1], freqs[0]
                                  ]))
     axes[0].set_title(r"Covariance, $\ell=${}".format(ell))
     axes[0].set_xlabel("frequency (MHz)")
@@ -60,9 +60,9 @@ def plot_cov_corr(
     #covariance subplot
     im_corr = axes[1].imshow(corr_mat[:,:,ell], origin='upper', 
                         extent=([
-                            freqs[0], freqs[-1], freqs[0], freqs[-1]
+                            freqs[0], freqs[-1], freqs[-1], freqs[0]
                                  ]))
-    axes[1].set_title(r"Correlation Coefficient, $\ell=${}".format(ell))
+    axes[1].set_title(r"Correlation Matrix, $\ell=${}".format(ell))
     axes[1].set_xlabel("frequency (MHz)")
     axes[1].set_ylabel("frequency (MHz)")
     fig.colorbar(im_corr, ax=axes[1], fraction=0.046, pad=0.04)
