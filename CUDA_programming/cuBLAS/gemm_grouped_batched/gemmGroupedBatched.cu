@@ -18,7 +18,7 @@ void init_cublas(){
 
 __attribute__((destructor))
 void destroy_cublas() {
-    printf(">>> Destroying cuBLAS handle now...\n");
+    // printf(">>> Destroying cuBLAS handle now...\n");
     cublasDestroy(global_handle);
 }
 
