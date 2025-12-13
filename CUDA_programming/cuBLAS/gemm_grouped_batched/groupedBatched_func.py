@@ -2,10 +2,12 @@ import numpy as np
 import cupy as cp
 import ctypes
 from simulate_params import *
+from zp_puregpu_funcs_py import *
+from corrcal.linalg import *
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #add a single print line for better terminal readability
-print()
+# print()
 
 lib = ctypes.cdll.LoadLibrary("/home/mike/Thesis_rough_work/CUDA_programming/cuBLAS/gemm_grouped_batched/gemmGroupedBatched.so")
 
@@ -96,20 +98,21 @@ def groupedBatchedMatmul(A_array, B_array, edges):
             # A_array_i = A_array[start:stop, :].T
             # B_array_i = B_array[start:stop, :]
 
-            A_array_i = A_array[start:stop, :].astype(cp.float32, copy=False).T  # (n_eig, h)
+            A_array_i = A_array[start:stop, :].astype(cp.float32, copy=False) # (n_eig, h)
             B_array_i = B_array[start:stop, :].astype(cp.float32, copy=False)    # (h, n_eig)
+            # print(A_array_i.shape)
 
-
-            C_array_i = cp.zeros((n_eig, n_eig), dtype=cp.float32)
+            A_cm = cp.asfortranarray(A_array_i.T)
+            B_cm = cp.asfortranarray(B_array_i)
+            C_array_i = cp.zeros((n_eig, n_eig), dtype=cp.float32, order='F')
 
             # print("Block", b_id)
             # print("A_block:\n", A_array_i)
             # print("B_block:\n", B_array_i)
             # print("Aᵀ @ B (CPU):\n", (A_array_i @ B_array_i).get())
-     
 
-            A_list.append(A_array_i)
-            B_list.append(B_array_i)
+            A_list.append(A_cm)
+            B_list.append(B_cm)
             C_list.append(C_array_i)
 
         A_ptrs.append(A_list)
@@ -131,9 +134,15 @@ def groupedBatchedMatmul(A_array, B_array, edges):
     B_ptrs_ct = ctypes.c_void_p(B_ptrs_raw.data.ptr)
     C_ptrs_ct = ctypes.c_void_p(C_ptrs_raw.data.ptr)
 
-    lda_array = k_array.copy()
-    ldb_array = n_array.copy()
-    ldc_array = n_array.copy()
+    # lda_array = k_array.copy()
+    # ldb_array = n_array.copy()
+    # ldc_array = n_array.copy()
+
+    # Correct row-major mapping for C_block = A_array_i @ B_array_i => changed to col order now
+    lda_array = m_array.copy().astype(np.int32, copy=False)  # = n_eig
+    ldb_array = k_array.copy().astype(np.int32, copy=False)  # = block height h
+    ldc_array = m_array.copy().astype(np.int32, copy=False)  
+
 
     lib.gemmGroupedBatched(
         groupCount,
@@ -143,14 +152,11 @@ def groupedBatchedMatmul(A_array, B_array, edges):
         n_array.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         k_array.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         alpha_arr.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-        # ctypes.c_void_p(A_ptrs_dev.data.ptr),
         A_ptrs_ct,  
         lda_array.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        # ctypes.c_void_p(A_ptrs_dev.data.ptr),
         B_ptrs_ct,
         ldb_array.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         beta_arr.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-        # ctypes.c_void_p(A_ptrs_dev.data.ptr),
         C_ptrs_ct,
         ldc_array.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         group_sizes.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
@@ -175,52 +181,53 @@ def groupedBatchedMatmul(A_array, B_array, edges):
 
 
 
-if __name__ == "__main__":
-    
-    n_ant = 500
-    n_eig = 3
-    n_src = 1
+# if __name__ == "__main__":
 
-    cp.random.seed(10)
-    spms = SimCorrcalParams(n_ant, n_eig, n_src, precision='float32', xp=cp)
-    edges = spms.edges()
+            
+#     #Parameter set up
+#     n_ant = 5
+#     n_eig = 3
+#     n_src = 1
 
-    sim_data = spms.sim_data()
-    noise = sim_data[0]
-    diff = sim_data[1]
-    # src = sim_data[2]
+#     cp.random.seed(10)
+#     spms = SimCorrcalParams(n_ant, n_eig, n_src, precision='float32', xp=cp)
+#     edges = spms.edges()
 
+#     #simulated matrices with correct shapes
+#     sim_data = spms.sim_data()
+#     noise = sim_data[0]
+#     diff = sim_data[1]
 
-    # bl_sizes, grps = group_blocks_by_size(edges)
-    # print(bl_sizes)
-    
-    # for g in grps.items():
-    #     print(g)
+#     #zeropad diff and noise 
+#     zp_noise, nb, lb = zeroPad(noise, edges, return_inv=True)
+#     zp_diff, nb, lb = zeroPad(diff, edges, return_inv=False)
 
+#     noise = 1/noise
 
-    # a = np.ones(10).astype(np.float32)
-    # for i in a[:1]:
-    #     print(type(i))
+#     # print('zeropadded diff', zp_diff)
+#     # print('regular diff', diff)
+#     # print(zp_noise)
 
-    
-    #test for gemmgroupedBatched as we go
+#     #set up the temp mat just before the mat mul we are interested in
+#     temp = noise[..., None] * diff
+#     zp_temp = zp_noise[..., None] * zp_diff
 
-    #we will eventually like to use this e-wise temp term:
-    temp = noise[..., None] * diff
+#     temp2 = cp.transpose(zp_diff, [0, 2, 1]) @ zp_temp
+#     print(temp2)
 
-    # print('temp:', temp)
+#     #running the batched grouped matmul
+#     C_array = groupedBatchedMatmul(diff, temp, edges)
+#     print(C_array)
 
-    #running the batched grouped matmul
-    C_array = groupedBatchedMatmul(diff, temp, edges)
-    print(C_array)
+#     # noise = cp.asnumpy(noise)
+#     # diff = cp.asnumpy(diff)
+#     # edges = cp.asnumpy(edges)
 
-    # print(diff)
-
-
-
+#     # out_cpu = make_small_blocks(noise, diff, edges)
+#     # print(out_cpu)
 
 
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #also conclude with a single print line 
-    print()
+    # print()

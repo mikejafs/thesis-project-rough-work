@@ -44,10 +44,10 @@ extern "C"
         global_handle,
         transA,
         transB,
-        n, m, k,
+        m, n, k,
         alpha_array,
-        Barray, ldb,
         Aarray, lda,
+        Barray, ldb,
         beta_array,
         Carray, ldc,
         groupCount, groupsize
