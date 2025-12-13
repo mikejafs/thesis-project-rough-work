@@ -110,6 +110,12 @@ all_C = list(g0_Carray) + list(g1_Carray) + list(g2_Carray)
 A_ptrs = cp.array([ar.data.ptr for ar in all_A], dtype=cp.uintp)
 B_ptrs = cp.array([br.data.ptr for br in all_B], dtype=cp.uintp)
 C_ptrs = cp.array([cr.data.ptr for cr in all_C], dtype=cp.uintp)
+# print(A_ptrs)
+
+# print()
+# for a in all_A:
+#     print('printing array:', a)
+# print()
 
 #Convert to ctypes (Using CuPy syntax for creating a pointer to a raw device memory address)
 A_ptrs_ct = ctypes.c_void_p(A_ptrs.data.ptr)
@@ -124,8 +130,8 @@ C_ptrs_ct = ctypes.c_void_p(C_ptrs.data.ptr)
 # expects things in col-major, so we can set things up in row-major and
 # provide matrices to the 'flipped' ordering of A and B in the matrix
 # multiply. Because cuBLAS assumes things are in col-major, this appears to 
-# cuBLAS like everything is transposed so from our end, we are doing C = A @ B,
-# but cuBLAS actually sees C^T = A^T @ B^T. 
+# cuBLAS like everything is transposed so from our end, we are doing C = B @ A,
+# but cuBLAS actually sees C^T = B^T @ A^T. 
 
 #Arrays of the matrix shapes
 m_row = np.array([2, 4, 1], dtype=np.int32)  #rows of A matrices within each group
@@ -149,7 +155,7 @@ beta_arr = np.array([0.0, 0.0, 0.0], dtype=np.float32)
 
 #array of group sizes
 group_sizes = np.array([4, 1, 2], dtype=np.int32)
-print(transA.ctypes.data_as(ctypes.POINTER(ctypes.c_int)))
+# print(transA.ctypes.data_as(ctypes.POINTER(ctypes.c_int)))
 
 
 #Call the grouped batched gemm from the .cu file. note the difference in ctypes pointer
