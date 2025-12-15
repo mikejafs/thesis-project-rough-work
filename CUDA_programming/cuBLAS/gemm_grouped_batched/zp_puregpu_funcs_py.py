@@ -4,8 +4,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 full_path = "/home/mike/corrcal_gpu_pipeline/pipeline/zp_puregpu_funcs.so"
+fp32_path = "/home/mike/corrcal_gpu_pipeline/pipeline/zp_puregpu_funcs_f32.so"
 
 zp_cuda_lib = ctypes.cdll.LoadLibrary(full_path)
+zp_cuda_lib_fp32 = ctypes.cdll.LoadLibrary(fp32_path)
 
 zp_cuda_lib.zeroPad1d.argtypes = [
     ctypes.POINTER(ctypes.c_double),
@@ -32,6 +34,40 @@ zp_cuda_lib.zeroPad2d.argtypes = [
 zp_cuda_lib.undo_zeroPad2d.argtypes = [
     ctypes.POINTER(ctypes.c_double),
     ctypes.POINTER(ctypes.c_double),
+    ctypes.POINTER(ctypes.c_long),
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int
+]
+
+zp_cuda_lib_fp32.zeroPad1d.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_long),
+    ctypes.c_int,
+    ctypes.c_int
+]
+
+zp_cuda_lib_fp32.undo_zeroPad1d.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_long),
+    ctypes.c_int,
+    ctypes.c_int
+]
+
+zp_cuda_lib_fp32.zeroPad2d.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_long),
+    ctypes.c_int,
+    ctypes.c_int,
+    ctypes.c_int
+]
+
+zp_cuda_lib_fp32.undo_zeroPad2d.argtypes = [
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
     ctypes.POINTER(ctypes.c_long),
     ctypes.c_int,
     ctypes.c_int,
@@ -87,7 +123,7 @@ def zeroPad2d(array, edges):
     return out_array, largest_block, n_blocks
 
 
-def zeroPad(array, edges, return_inv):
+def zeroPad(array, edges, return_inv, dtype):
     """
     Zeropads an input matrix according to the largest block in the diffuse
     sky covariance matrix. In other words, calculates the largest block using
@@ -119,12 +155,20 @@ def zeroPad(array, edges, return_inv):
         Total number of redundant blocks.
     """
 
-    array = cp.array(array, dtype=cp.double)
+    array = cp.array(array, dtype=dtype)
     edges = cp.array(edges, dtype=cp.int64)
     largest_block = cp.array(cp.diff(edges).max(), dtype = cp.int64)
     n_blocks = cp.array(edges.size - 1, dtype = cp.int64)
     largest_block = int(largest_block.get())
     n_blocks = int(n_blocks.get())
+
+    if dtype == cp.float64:
+        lib = zp_cuda_lib
+        ctype = ctypes.c_double
+    elif dtype == cp.float32: 
+        lib = zp_cuda_lib_fp32
+        ctype = ctypes.c_float
+
 
     if return_inv:
         array = 1/array
@@ -140,10 +184,10 @@ def zeroPad(array, edges, return_inv):
         pass
 
     if array.ndim == 1: 
-        out_array = cp.zeros((n_blocks*largest_block), dtype = cp.double)
-        zp_cuda_lib.zeroPad1d(
-            ctypes.cast(array.data.ptr, ctypes.POINTER(ctypes.c_double)),
-            ctypes.cast(out_array.data.ptr, ctypes.POINTER(ctypes.c_double)),
+        out_array = cp.zeros((n_blocks*largest_block), dtype = dtype)
+        lib.zeroPad1d(
+            ctypes.cast(array.data.ptr, ctypes.POINTER(ctype)),
+            ctypes.cast(out_array.data.ptr, ctypes.POINTER(ctype)),
             ctypes.cast(edges.data.ptr, ctypes.POINTER(ctypes.c_long)),
             n_blocks,
             largest_block
@@ -152,10 +196,10 @@ def zeroPad(array, edges, return_inv):
         cp.cuda.Stream.null.synchronize()
     else:
         array_cols = array.shape[1]
-        out_array = cp.zeros((n_blocks*largest_block*array_cols), dtype = cp.double)
-        zp_cuda_lib.zeroPad2d(
-            ctypes.cast(array.data.ptr, ctypes.POINTER(ctypes.c_double)),
-            ctypes.cast(out_array.data.ptr, ctypes.POINTER(ctypes.c_double)),
+        out_array = cp.zeros((n_blocks*largest_block*array_cols), dtype = dtype)
+        lib.zeroPad2d(
+            ctypes.cast(array.data.ptr, ctypes.POINTER(ctype)),
+            ctypes.cast(out_array.data.ptr, ctypes.POINTER(ctype)),
             ctypes.cast(edges.data.ptr, ctypes.POINTER(ctypes.c_long)),
             array_cols,
             n_blocks,

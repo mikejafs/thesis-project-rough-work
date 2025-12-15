@@ -4,14 +4,31 @@ from simulate_params import *
 from groupedBatched_funcv2 import *
 from zp_puregpu_funcs_py import *
 from cupyx.profiler import benchmark
+import sys
+
+save_to_results = False
+
+if save_to_results:
+    sys.stdout = open("bmark_results.txt", "a")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 print()
+print('NEW RESULT~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+print()
+
+
+"""~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SET UP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
 
 #Parameter set up
 n_ant = 1000
-n_eig = 3
-n_src = 1
+n_eig = 5
+n_src = 20
+
+print('Parameters:')
+print('Number of antennas (Re Im split):', n_ant,
+      '\nNumber of eigenmodes:', n_eig,
+      '\nNumbe of sources:', n_src)
+print()
 
 cp.random.seed(10)
 spms = SimCorrcalParams(n_ant, n_eig, n_src, precision='float32', xp=cp)
@@ -21,25 +38,28 @@ edges = spms.edges()
 sim_data = spms.sim_data()
 noise = sim_data[0]
 diff = sim_data[1]
+# print(len(diff))
 
 #zeropad diff and noise 
-zp_noise, nb, lb = zeroPad(noise, edges, return_inv=True)
-zp_diff, nb, lb = zeroPad(diff, edges, return_inv=False)
-
-# print(zp_diff)
-# print(zp_noise)
+zp_noise, nb, lb = zeroPad(noise, edges, return_inv=True, dtype=cp.float32)
+zp_diff, nb, lb = zeroPad(diff, edges, return_inv=False, dtype=cp.float32)
 
 
 #need this if wanting to compare to zped stuff since the true matmul is diff.T@N^-1@diff
 noise = 1/noise
 
 
+
+"""~~~~~~~~~~~~~~~~~~~~~ COMPUTATION OF diff.T @ N^-1 @ diff ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
+
 #set up the temp mat just before the mat mul we are interested in
+
 #cublas temp (no zeropadding)
 temp = noise[..., None] * diff
 
 #zeropadded temp
 zp_temp = zp_noise[..., None] * zp_diff
+
 
 #cupy computation of diff.T @ N^-1 @ diff
 def cupy_block_mul(diff, tmp):
@@ -49,17 +69,23 @@ def cupy_block_mul(diff, tmp):
 temp2 = cupy_block_mul(zp_diff, zp_temp)
 # print(temp2)
 
-
+#cublas compuation of diff.T @ N^-1 @ diff
 grouped_batched_param_dict = prepare_grouped_batched_params(diff, temp, edges) 
 out_ptr = groupedBatchedMatmul(grouped_batched_param_dict)
 out = reshape_out(out_ptr, edges)
-# #running the batched grouped matmul
-# C_array = groupedBatchedMatmul(diff, temp, edges)
 # print(out)
 
 #CHECK IF CUPY AND CUBLAS ARE COMPUTING THE SAME THING
-print(np.allclose(temp2, out))
+if np.allclose(temp2, out):
+    print('Checking correctness with np.allclose (default params):' \
+    '\nCuPy and cuBLAS match')
+else:
+    print('Checking correctness with np.allclose (default params):' \
+    '\nCuPy and cuBLAS DO NOT match')
 
+
+
+"""~~~~~~~~~~~~~~~~~~~~~ BENCHMARKING CUPY AND CUBLAS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
 
 #CUPY TIMES
 times = (benchmark(cupy_block_mul, (zp_diff, zp_temp), n_repeat = 100))
@@ -74,6 +100,8 @@ avg_gpu_t = cp.mean(gpu_t_s)
 avg_cpu_t = cp.mean(cpu_t_s)
 
 # print(gpu_cpu_t, gpu_gpu_t)
+print()
+print('CuPy times:')
 print('cpu:', avg_cpu_t, ' gpu:', avg_gpu_t)
 
 #CUBLAS TIMES
@@ -89,6 +117,8 @@ avg_gpu_t = cp.mean(gpu_t_s)
 avg_cpu_t = cp.mean(cpu_t_s)
 
 # print(gpu_cpu_t, gpu_gpu_t)
+print()
+print('CuBLAS times:')
 print('cpu:', avg_cpu_t, ' gpu:', avg_gpu_t)
 
 
