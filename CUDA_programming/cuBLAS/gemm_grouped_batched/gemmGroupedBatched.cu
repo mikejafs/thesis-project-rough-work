@@ -14,6 +14,7 @@ void init_cublas(){
     }
 
     cublasSetMathMode(global_handle, CUBLAS_TF32_TENSOR_OP_MATH);
+    // cublasSetMathMode(global_handle, CUBLAS_DEFAULT_MATH);
 }
 
 __attribute__((destructor))
@@ -39,9 +40,18 @@ extern "C"
         const int *groupsize
     ){
 
+    // static cublasHandle_t handle = nullptr;
+    // if (handle == nullptr) {
+    //     cublasCreate(&handle);
+    //     cublasSetMathMode(handle, CUBLAS_TF32_TENSOR_OP_MATH);
+    // }
+
+    // cublasHandle_t handle;
+    // cublasCreate(&handle);
 
     cublasStatus_t status = cublasSgemmGroupedBatched(
         global_handle,
+        // handle,
         transA,
         transB,
         m, n, k,
@@ -57,5 +67,8 @@ extern "C"
         printf("groupedBatched GEMM failed: %d\n", status);
     }
 
+    // cublasDestroy(handle);
+
     }
+
 }

@@ -8,6 +8,7 @@ parameters.
 
 import numpy as np
 import cupy as cp
+from gridding import *
 
 class SimCorrcalParams():
     def __init__(self, n_ant, n_eig, n_src, precision, xp):
@@ -29,9 +30,15 @@ class SimCorrcalParams():
         # print(n_bl)
         return n_bl
 
-    def edges(self):
-        edges = (self.xp.unique(self.xp.random.randint(1, int(self.n_bl() / 2) - 1, size=(self.n_ant,))* 2))
-        edges = self.xp.concatenate((self.xp.array([0]), edges, self.xp.array([self.n_bl()])))
+    def edges(self, grid_par_x, grid_par_y, use_random=False):
+        if use_random:
+            edges = (self.xp.unique(self.xp.random.randint(1, int(self.n_bl() / 2) - 1, size=(self.n_ant,))* 2))
+            edges = self.xp.concatenate((self.xp.array([0]), edges, self.xp.array([self.n_bl()])))
+        else:
+            if grid_par_x * grid_par_y != self.n_ant:
+                raise ValueError("antenna dims x times y must equal n_ant")
+            edges = grid_redundancy_edges(grid_par_x, grid_par_y)[0]
+            edges = 2*edges
         return edges
     
     def sim_data(self):

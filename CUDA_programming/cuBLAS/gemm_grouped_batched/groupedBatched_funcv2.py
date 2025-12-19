@@ -3,7 +3,6 @@ import cupy as cp
 import ctypes
 from simulate_params import *
 from zp_puregpu_funcs_py import *
-from corrcal.linalg import *
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #add a single print line for better terminal readability
@@ -50,9 +49,9 @@ def group_blocks_by_size(edges):
 def prepare_grouped_batched_params(A_array, B_array, edges):
     bl_sizes, grps = group_blocks_by_size(edges)
     group_sizes = np.array([len(grp_size) for grp_size in grps.values()], dtype=np.int32)
-    # print('the group size are:', group_sizes)
-    # print('The block sizes are:', bl_sizes)
-    # print('PRINTING GRPS:', grps)
+    print('the group size are:', group_sizes)
+    print('The block sizes are:', bl_sizes)
+    print('PRINTING GRPS:', sorted(grps.items()))
 
     groupCount = len(grps)  #total number of groups
     # print('The total number of groups is:', groupCount)
@@ -116,10 +115,14 @@ def prepare_grouped_batched_params(A_array, B_array, edges):
         B_ptrs.append(B_list)
         C_ptrs.append(C_list)
 
+    print(A_ptrs)
+
     # === Flatten pointer lists into ONE contiguous list (required by cuBLAS) ===
     flat_A = [arr for group in A_ptrs for arr in group]
     flat_B = [arr for group in B_ptrs for arr in group]
     flat_C = [arr for group in C_ptrs for arr in group]
+
+    # print('flat A:', flat_A)
 
     # Create device arrays of raw pointers
     A_ptrs_raw = cp.asarray([a.data.ptr for a in flat_A], dtype=cp.uintp)
@@ -183,7 +186,7 @@ def groupedBatchedMatmul(param_dict):
         param_dict["ldcs"].ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         param_dict["groupSizes"].ctypes.data_as(ctypes.POINTER(ctypes.c_int))
     )
-
+    cp.cuda.Stream.null.synchronize()
     return param_dict["Carrays"]  # ordered by block index
 
 
@@ -208,50 +211,52 @@ def reshape_out(C_ptrs, edges):
     C_stacked = cp.stack(C_out, axis=0)
     return C_stacked
 
-# if __name__ == "__main__":
 
+
+if __name__ == "__main__":
             
-#     #Parameter set up
-#     n_ant = 5
-#     n_eig = 3
-#     n_src = 1
+    #Parameter set up
+    n_ant = 500
+    n_eig = 3
+    n_src = 1
 
-#     cp.random.seed(10)
-#     spms = SimCorrcalParams(n_ant, n_eig, n_src, precision='float32', xp=cp)
-#     edges = spms.edges()
+    cp.random.seed(10)
+    spms = SimCorrcalParams(n_ant, n_eig, n_src, precision='float32', xp=cp)
+    edges = spms.edges()
 
-#     #simulated matrices with correct shapes
-#     sim_data = spms.sim_data()
-#     noise = sim_data[0]
-#     diff = sim_data[1]
+    #simulated matrices with correct shapes
+    sim_data = spms.sim_data()
+    noise = sim_data[0]
+    diff = sim_data[1]
 
-#     #zeropad diff and noise 
-#     zp_noise, nb, lb = zeroPad(noise, edges, return_inv=True)
-#     zp_diff, nb, lb = zeroPad(diff, edges, return_inv=False)
+    #zeropad diff and noise 
+    # zp_noise, nb, lb = zeroPad(noise, edges, return_inv=True)
+    # zp_diff, nb, lb = zeroPad(diff, edges, return_inv=False)
 
-#     noise = 1/noise
+    noise = 1/noise
 
-#     # print('zeropadded diff', zp_diff)
-#     # print('regular diff', diff)
-#     # print(zp_noise)
+    # print('zeropadded diff', zp_diff)
+    # print('regular diff', diff)
+    # print(zp_noise)
 
-#     #set up the temp mat just before the mat mul we are interested in
-#     temp = noise[..., None] * diff
-#     zp_temp = zp_noise[..., None] * zp_diff
+    #set up the temp mat just before the mat mul we are interested in
+    temp = noise[..., None] * diff
+    # zp_temp = zp_noise[..., None] * zp_diff
 
-#     temp2 = cp.transpose(zp_diff, [0, 2, 1]) @ zp_temp
-#     print(temp2)
+    # temp2 = cp.transpose(zp_diff, [0, 2, 1]) @ zp_temp
+    # print(temp2)
 
-#     #running the batched grouped matmul
-#     C_array = groupedBatchedMatmul(diff, temp, edges)
-#     print(C_array)
+    #running the batched grouped matmul
+    params = prepare_grouped_batched_params(diff, temp, edges)
+    C_array = groupedBatchedMatmul(params)
+    # print(C_array)
 
-#     # noise = cp.asnumpy(noise)
-#     # diff = cp.asnumpy(diff)
-#     # edges = cp.asnumpy(edges)
+    # noise = cp.asnumpy(noise)
+    # diff = cp.asnumpy(diff)
+    # edges = cp.asnumpy(edges)
 
-#     # out_cpu = make_small_blocks(noise, diff, edges)
-#     # print(out_cpu)
+    # out_cpu = make_small_blocks(noise, diff, edges)
+    # print(out_cpu)
 
 
 

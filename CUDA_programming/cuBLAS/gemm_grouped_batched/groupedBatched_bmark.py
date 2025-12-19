@@ -20,9 +20,11 @@ print()
 """~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SET UP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
 
 #Parameter set up
-n_ant = 1000
-n_eig = 5
-n_src = 20
+n_ant = 8
+ant_dim_x = 16
+ant_dim_y = 32
+n_eig = 2
+n_src = 1
 
 print('Parameters:')
 print('Number of antennas (Re Im split):', n_ant,
@@ -32,7 +34,8 @@ print()
 
 cp.random.seed(10)
 spms = SimCorrcalParams(n_ant, n_eig, n_src, precision='float32', xp=cp)
-edges = spms.edges()
+edges = spms.edges(ant_dim_x, ant_dim_y, use_random=True)
+# print(edges)
 
 #simulated matrices with correct shapes
 sim_data = spms.sim_data()
@@ -49,6 +52,10 @@ zp_diff, nb, lb = zeroPad(diff, edges, return_inv=False, dtype=cp.float32)
 noise = 1/noise
 
 
+# print(max([(edges[i+1] - edges[i]) for i in range(len(edges)-1)]))
+# print(min([(edges[i+1] - edges[i]) for i in range(len(edges)-1)]))
+
+
 
 """~~~~~~~~~~~~~~~~~~~~~ COMPUTATION OF diff.T @ N^-1 @ diff ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
 
@@ -63,17 +70,24 @@ zp_temp = zp_noise[..., None] * zp_diff
 
 #cupy computation of diff.T @ N^-1 @ diff
 def cupy_block_mul(diff, tmp):
-    return cp.transpose(diff, [0, 2, 1]) @ tmp
+    res = cp.transpose(diff, [0, 2, 1]) @ tmp
+    cp.cuda.Stream.null.synchronize()
+    return res
 
 #return temp2 = diff.T @ N^-1 @ diff
 temp2 = cupy_block_mul(zp_diff, zp_temp)
-# print(temp2)
+print(temp2)
 
 #cublas compuation of diff.T @ N^-1 @ diff
 grouped_batched_param_dict = prepare_grouped_batched_params(diff, temp, edges) 
 out_ptr = groupedBatchedMatmul(grouped_batched_param_dict)
 out = reshape_out(out_ptr, edges)
-# print(out)
+print(out)
+
+print()
+print('cuBLAS output has dtype:', cp.dtype(out))
+print()
+
 
 #CHECK IF CUPY AND CUBLAS ARE COMPUTING THE SAME THING
 if np.allclose(temp2, out):
