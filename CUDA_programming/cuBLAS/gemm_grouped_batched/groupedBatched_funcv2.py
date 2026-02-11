@@ -1,3 +1,8 @@
+"""
+Pulled the grouped gem batched lib call outside of the prepare params function
+in this file compared to groupedBatched_func
+"""
+
 import numpy as np
 import cupy as cp
 import ctypes
@@ -49,9 +54,9 @@ def group_blocks_by_size(edges):
 def prepare_grouped_batched_params(A_array, B_array, edges):
     bl_sizes, grps = group_blocks_by_size(edges)
     group_sizes = np.array([len(grp_size) for grp_size in grps.values()], dtype=np.int32)
-    print('the group size are:', group_sizes)
-    print('The block sizes are:', bl_sizes)
-    print('PRINTING GRPS:', sorted(grps.items()))
+    # print('the group size are:', group_sizes)
+    # print('The block sizes are:', bl_sizes)
+    # print('PRINTING GRPS:', sorted(grps.items()))
 
     groupCount = len(grps)  #total number of groups
     # print('The total number of groups is:', groupCount)
@@ -115,7 +120,7 @@ def prepare_grouped_batched_params(A_array, B_array, edges):
         B_ptrs.append(B_list)
         C_ptrs.append(C_list)
 
-    print(A_ptrs)
+    # print(A_ptrs)
 
     # === Flatten pointer lists into ONE contiguous list (required by cuBLAS) ===
     flat_A = [arr for group in A_ptrs for arr in group]

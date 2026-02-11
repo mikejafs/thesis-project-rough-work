@@ -114,7 +114,7 @@ def extract_and_zeropad_group(A, B, global_edges, block_ids, dtype):
     # Zero-pad using your CUDA kernels
     zpA, largest_block, n_blocks = zeroPad(A_concat, local_edges, return_inv=False, dtype=dtype)
     zpB, _, _ = zeroPad(B_concat, local_edges, return_inv=False, dtype=dtype)
-    print(zpA)
+    # print(zpA)
 
     # zpA and zpB now have shape:
     # (n_blocks, largest_block, n_eig)
@@ -297,26 +297,26 @@ def groupedBatchedMatmul(param_dict):
     return param_dict["C_lists"]  # ordered by block index
 
 
-def reshape_out(C_ptrs, edges):
-    bl_sizes, grps = group_blocks_by_size(edges)
-    group_sizes = np.array([len(grp_size) for grp_size in grps.values()], dtype=np.int32)
+# def reshape_out(C_ptrs, edges):
+#     bl_sizes, grps = group_blocks_by_size(edges)
+#     group_sizes = np.array([len(grp_size) for grp_size in grps.values()], dtype=np.int32)
 
-    flat_C = [arr for group in C_ptrs for arr in group]
-    C_out = [None] * len(bl_sizes)
-    idx = 0
-    for (h, block_ids), size in zip(grps.items(), group_sizes):
-        for j, b in enumerate(block_ids):
-            C_out[b] = flat_C[idx + j]
-        idx += size
+#     flat_C = [arr for group in C_ptrs for arr in group]
+#     C_out = [None] * len(bl_sizes)
+#     idx = 0
+#     for (h, block_ids), size in zip(grps.items(), group_sizes):
+#         for j, b in enumerate(block_ids):
+#             C_out[b] = flat_C[idx + j]
+#         idx += size
 
-    # print("edges:", edges)
-    # print("block_sizes:", bl_sizes)
-    # print("groups:", grps)
-    # print("group_sizes:", group_sizes)
-    # print("N_blocks:", len(bl_sizes), "sum(group_sizes):", group_sizes.sum())
+#     # print("edges:", edges)
+#     # print("block_sizes:", bl_sizes)
+#     # print("groups:", grps)
+#     # print("group_sizes:", group_sizes)
+#     # print("N_blocks:", len(bl_sizes), "sum(group_sizes):", group_sizes.sum())
 
-    C_stacked = cp.stack(C_out, axis=0)
-    return C_stacked
+#     C_stacked = cp.stack(C_out, axis=0)
+#     return C_stacked
 
 # -----------------------------------------------------------------------------
 # Step 6 — Run grouped GEMM, then reconstruct in global block order
@@ -376,7 +376,7 @@ if __name__ == "__main__":
         return res
 
     temp2 = cupy_block_mul(zp_diff, zp_temp)
-    print(temp2)
+    # print(temp2)
 
     #running the batched grouped matmul
     params = prepare_params_for_all_groups(diff, temp, edges, dtype=cp.float32)
@@ -390,7 +390,7 @@ if __name__ == "__main__":
         len(params["block_sizes"])
     )
 
-    print(C_stacked)
+    # print(C_stacked)
 
 
     #CHECK IF CUPY AND CUBLAS ARE COMPUTING THE SAME THING

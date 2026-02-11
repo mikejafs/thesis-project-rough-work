@@ -81,30 +81,107 @@ def ptr(array):
 group_count = 3
 
 #Group 0: four 2x3*3x2 gemms
-g0_Aarray = cp.random.rand(4, 2, 3, dtype = cp.float32)
-g0_Barray = cp.random.rand(4, 3, 2, dtype = cp.float32)
+# g0_Aarray = cp.random.rand(4, 2, 3, dtype = cp.float32)
+# g0_Barray = cp.random.rand(4, 3, 2, dtype = cp.float32)
+# g0_Carray = cp.zeros((4, 2, 2), dtype=cp.float32)
+
+# g0_Aarray = cp.asfortranarray(cp.random.rand(4, 2, 3, dtype = cp.float32))
+# g0_Barray = cp.asfortranarray(cp.random.rand(4, 3, 2, dtype = cp.float32))
+# g0_Carray = cp.asfortranarray(cp.zeros((4, 2, 2), dtype=cp.float32))
+
+# # print(g0_Aarray @ g0_Barray)
+
+# #Group 1: one 4x3*3x4 gemms
+# # g1_Aarray = cp.random.rand(1, 4, 3, dtype = cp.float32)
+# # g1_Barray = cp.random.rand(1, 3, 4, dtype = cp.float32)
+# # g1_Carray = cp.zeros((1, 4, 4), dtype=cp.float32)
+
+# g1_Aarray = cp.asfortranarray(cp.random.rand(1, 4, 3, dtype = cp.float32))
+# g1_Barray = cp.asfortranarray(cp.random.rand(1, 3, 4, dtype = cp.float32))
+# g1_Carray = cp.asfortranarray(cp.zeros((1, 4, 4), dtype=cp.float32))
+
+
+# #Group 2: two 1x3*3x1 gemms 
+# # g2_Aarray = cp.random.rand(2, 1, 3, dtype = cp.float32)
+# # g2_Barray = cp.random.rand(2, 3, 1, dtype = cp.float32)
+# # g2_Carray = cp.zeros((2, 1, 1), dtype=cp.float32)
+
+# g2_Aarray = cp.asfortranarray(cp.random.rand(2, 1, 3, dtype = cp.float32))
+# g2_Barray = cp.asfortranarray(cp.random.rand(2, 3, 1, dtype = cp.float32))
+# g2_Carray = cp.asfortranarray(cp.zeros((2, 1, 1), dtype=cp.float32))
+
+
+# #Create lists of pointers pointing to each of the matrices
+
+# #First combine all A, B, C blocks
+# all_A = list(g0_Aarray) + list(g1_Aarray) + list(g2_Aarray)
+# all_B = list(g0_Barray) + list(g1_Barray) + list(g2_Barray)
+# all_C = list(g0_Carray) + list(g1_Carray) + list(g2_Carray)
+
+#----------------------------------------------------------
+# Grouped matrices (FORTRAN contiguous, standalone matrices)
+#----------------------------------------------------------
+
+# Group 0: four 2x3 * 3x2 GEMMs
+g0_Aarray = cp.random.rand(4, 2, 3, dtype=cp.float32)
+g0_Barray = cp.random.rand(4, 3, 2, dtype=cp.float32)
 g0_Carray = cp.zeros((4, 2, 2), dtype=cp.float32)
 
-# print(g0_Aarray @ g0_Barray)
-
-#Group 1: one 4x3*3x4 gemms
-g1_Aarray = cp.random.rand(1, 4, 3, dtype = cp.float32)
-g1_Barray = cp.random.rand(1, 3, 4, dtype = cp.float32)
+# Group 1: one 4x3 * 3x4 GEMM
+g1_Aarray = cp.random.rand(1, 4, 3, dtype=cp.float32)
+g1_Barray = cp.random.rand(1, 3, 4, dtype=cp.float32)
 g1_Carray = cp.zeros((1, 4, 4), dtype=cp.float32)
 
-
-#Group 2: two 1x3*3x1 gemms 
-g2_Aarray = cp.random.rand(2, 1, 3, dtype = cp.float32)
-g2_Barray = cp.random.rand(2, 3, 1, dtype = cp.float32)
+# Group 2: two 1x3 * 3x1 GEMMs
+g2_Aarray = cp.random.rand(2, 1, 3, dtype=cp.float32)
+g2_Barray = cp.random.rand(2, 3, 1, dtype=cp.float32)
 g2_Carray = cp.zeros((2, 1, 1), dtype=cp.float32)
 
 
-#Create lists of pointers pointing to each of the matrices
+#----------------------------------------------------------
+# Create truly standalone column-major matrices
+# (NO views, NO inherited strides)
+#----------------------------------------------------------
 
-#First combine all A, B, C blocks
-all_A = list(g0_Aarray) + list(g1_Aarray) + list(g2_Aarray)
-all_B = list(g0_Barray) + list(g1_Barray) + list(g2_Barray)
-all_C = list(g0_Carray) + list(g1_Carray) + list(g2_Carray)
+def split_and_fortran_copy(batch_array):
+    """
+    Convert a (batch, m, n) array into a list of standalone
+    Fortran-contiguous (m, n) matrices.
+    """
+    return [cp.asfortranarray(batch_array[i].copy())
+            for i in range(batch_array.shape[0])]
+
+
+all_A = (
+    split_and_fortran_copy(g0_Aarray) +
+    split_and_fortran_copy(g1_Aarray) +
+    split_and_fortran_copy(g2_Aarray)
+)
+
+# print(all_A)
+
+# print(f"Printing single test:\n\n \
+#       {split_and_fortran_copy(g0_Aarray)}")
+# print(f"Printing single test:\n\n \
+#       {split_and_fortran_copy(g1_Aarray)}")
+# print(f"Printing single test:\n\n \
+#       {split_and_fortran_copy(g2_Aarray)}")
+
+
+
+all_B = (
+    split_and_fortran_copy(g0_Barray) +
+    split_and_fortran_copy(g1_Barray) +
+    split_and_fortran_copy(g2_Barray)
+)
+
+all_C = (
+    split_and_fortran_copy(g0_Carray) +
+    split_and_fortran_copy(g1_Carray) +
+    split_and_fortran_copy(g2_Carray)
+)
+
+
 
 #Arrays of raw device pointers
 A_ptrs = cp.array([ar.data.ptr for ar in all_A], dtype=cp.uintp)
@@ -138,12 +215,12 @@ m_row = np.array([2, 4, 1], dtype=np.int32)  #rows of A matrices within each gro
 n_row = np.array([2, 4, 1], dtype=np.int32)  #cols of B matrices within each group
 k_row = np.array([3, 3, 3], dtype=np.int32)  #rows of B matrices within each group (i.e., #eigenmodes for diffuse mat)
 
-#arrays of leading dimensions (in row-major, leading dimensions are the # cols)
+#arrays of leading dimensions (in row-major, leading dimensions are the # cols -- In col-major it's the # rows)
 #the quickest way to define leading dimensions in this case is then:
 
-lda = k_row.copy()
-ldb = n_row.copy()
-ldc = n_row.copy()
+lda = m_row.copy()
+ldb = k_row.copy()
+ldc = m_row.copy()
 
 #arrays of transpose specification (in Python, 0 -> CUBLAS_OP_N, 1 -> CUBLAS_OP_T)
 transA = np.array([0]*group_count, dtype=np.int32)
@@ -184,11 +261,45 @@ lib.gemmGroupedBatched(
 )
 
 
+# --------------------------------------------------
+# Reassemble C results back into grouped arrays
+# --------------------------------------------------
+
+#this is why we copied before switching to fortran arrays, since now the Carrays still have
+#row-major ordering
+
+offset = 0
+
+# Group 0
+for i in range(4):
+    g0_Carray[i] = all_C[offset + i]
+offset += 4
+
+# Group 1
+for i in range(1):
+    g1_Carray[i] = all_C[offset + i]
+offset += 1
+
+# Group 2
+for i in range(2):
+    g2_Carray[i] = all_C[offset + i]
+offset += 2
+
+
+
 #check against Numpy
+numpy_prod0 = cp.asnumpy(g0_Aarray) @ cp.asnumpy(g0_Barray)
+numpy_prod1 = g1_Aarray @ g1_Barray
+numpy_prod2 = g2_Aarray @ g2_Barray
+
+
 print(cp.allclose(g0_Carray, g0_Aarray @ g0_Barray))
 print(cp.allclose(g1_Carray, g1_Aarray @ g1_Barray))
 print(cp.allclose(g2_Carray, g2_Aarray @ g2_Barray))
 
 
-
+#Print out the full results
+print(g0_Carray)
+print()
+print(numpy_prod0)
 

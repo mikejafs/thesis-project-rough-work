@@ -9,6 +9,8 @@ def grid_redundancy_edges(n_rows, n_cols):
             edges[k] : edges[k+1] give the index range for the k-th redundant block.
         blocks: dict mapping (dx, dy) → list of baseline index pairs
             (Useful for debugging or block matrix construction.)
+        key_sorted: dict
+            sorted keys for each of the redundant blocks (I think)
     """
 
     # list all antenna coordinates

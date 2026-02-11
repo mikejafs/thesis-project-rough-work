@@ -20,11 +20,12 @@ print()
 """~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SET UP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
 
 #Parameter set up
-n_ant = 8
 ant_dim_x = 16
 ant_dim_y = 32
-n_eig = 2
+n_eig = 3
 n_src = 1
+# n_ant = 500
+n_ant = ant_dim_x*ant_dim_y
 
 print('Parameters:')
 print('Number of antennas (Re Im split):', n_ant,
@@ -34,7 +35,7 @@ print()
 
 cp.random.seed(10)
 spms = SimCorrcalParams(n_ant, n_eig, n_src, precision='float32', xp=cp)
-edges = spms.edges(ant_dim_x, ant_dim_y, use_random=True)
+edges = spms.edges(ant_dim_x, ant_dim_y, use_random=False)
 # print(edges)
 
 #simulated matrices with correct shapes
@@ -76,13 +77,13 @@ def cupy_block_mul(diff, tmp):
 
 #return temp2 = diff.T @ N^-1 @ diff
 temp2 = cupy_block_mul(zp_diff, zp_temp)
-print(temp2)
+# print(temp2)
 
 #cublas compuation of diff.T @ N^-1 @ diff
 grouped_batched_param_dict = prepare_grouped_batched_params(diff, temp, edges) 
 out_ptr = groupedBatchedMatmul(grouped_batched_param_dict)
 out = reshape_out(out_ptr, edges)
-print(out)
+# print(out)
 
 print()
 print('cuBLAS output has dtype:', cp.dtype(out))

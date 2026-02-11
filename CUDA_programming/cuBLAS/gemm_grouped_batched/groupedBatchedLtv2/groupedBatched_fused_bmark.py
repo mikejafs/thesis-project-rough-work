@@ -98,9 +98,9 @@ if __name__ == "__main__":
 
     """~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SET UP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
     #Parameter set up
-    n_ant = 1000
     ant_dim_x = 32
-    ant_dim_y = 32
+    ant_dim_y = 64
+    n_ant = ant_dim_x * ant_dim_y    
     n_eig = 3
     n_src = 1
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     cp.random.seed(10)
     spms = SimCorrcalParams(n_ant, n_eig, n_src, precision='float32', xp=cp)
-    edges = spms.edges(ant_dim_x, ant_dim_y, use_random=True)
+    edges = spms.edges(ant_dim_x, ant_dim_y, use_random=False)
     # print(edges)
 
     #simulated matrices with correct shapes
