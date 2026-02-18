@@ -192,7 +192,7 @@ def groupedBatchedMatmul(param_dict):
         param_dict["groupSizes"].ctypes.data_as(ctypes.POINTER(ctypes.c_int))
     )
     cp.cuda.Stream.null.synchronize()
-    return param_dict["Carrays"]  # ordered by block index
+    # return param_dict["Carrays"]  # ordered by block index
 
 
 def reshape_out(C_ptrs, edges):

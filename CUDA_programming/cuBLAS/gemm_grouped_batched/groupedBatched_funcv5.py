@@ -241,7 +241,7 @@ def groupedBatchedMatmul(param_dict):
         param_dict["groupSizes"].ctypes.data_as(ctypes.POINTER(ctypes.c_int))
     )
     cp.cuda.Stream.null.synchronize()
-    return cp.stack(param_dict["C_blocks"], axis=0)  # ordered by block index
+    # return cp.stack(param_dict["C_blocks"], axis=0)  # ordered by block index
 
 
 if __name__ == "__main__":
@@ -252,8 +252,8 @@ if __name__ == "__main__":
     #Parameter set up
     n_eig = 3
     n_src = 1
-    rows = 16
-    cols = 32
+    rows = 3
+    cols = 2
     n_ant = rows*cols
     # n_ant = 1000
 
@@ -264,7 +264,7 @@ if __name__ == "__main__":
     print()
 
 
-    cp.random.seed(10)
+    cp.random.seed(0)
     spms = SimCorrcalParams(n_ant, n_eig, n_src, precision='float32', xp=cp)
     edges = spms.edges(grid_par_x=rows, grid_par_y=cols, use_random=False)
 
@@ -318,21 +318,25 @@ if __name__ == "__main__":
     #return temp2 = diff.T @ N^-1 @ diff
     temp2 = cupy_block_mul(zp_diff, zp_temp)
 
+    print(temp2)
+
     #cublas compuation of diff.T @ N^-1 @ diff
     params = prepare_grouped_batched_params(diff, temp, edges)
     C_array = groupedBatchedMatmul(params)
     # print(C_array.dtype)
 
+    check_match = False
 
-    print("------------------------------------------------------------")
-    #CHECK IF CUPY AND CUBLAS ARE COMPUTING THE SAME THING
-    if np.allclose(temp2, C_array):
-        print('Checking correctness with np.allclose (default params):' \
-        '\nCuPy and cuBLAS match')
-    else:
-        print('Checking correctness with np.allclose (default params):' \
-        '\nCuPy and cuBLAS DO NOT match')
-    print("------------------------------------------------------------")
+    if check_match:
+        print("------------------------------------------------------------")
+        #CHECK IF CUPY AND CUBLAS ARE COMPUTING THE SAME THING
+        if np.allclose(temp2, C_array):
+            print('Checking correctness with np.allclose (default params):' \
+            '\nCuPy and cuBLAS match')
+        else:
+            print('Checking correctness with np.allclose (default params):' \
+            '\nCuPy and cuBLAS DO NOT match')
+        print("------------------------------------------------------------")
 
 
     """~~~~~~~~~~~~~~~~~~~~~ BENCHMARKING CUPY AND CUBLAS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""

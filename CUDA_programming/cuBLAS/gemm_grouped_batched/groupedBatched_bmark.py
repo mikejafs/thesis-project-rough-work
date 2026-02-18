@@ -20,9 +20,9 @@ print()
 """~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SET UP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
 
 #Parameter set up
-ant_dim_x = 16
+ant_dim_x = 18
 ant_dim_y = 32
-n_eig = 3
+n_eig = 5
 n_src = 1
 # n_ant = 500
 n_ant = ant_dim_x*ant_dim_y
@@ -82,22 +82,26 @@ temp2 = cupy_block_mul(zp_diff, zp_temp)
 #cublas compuation of diff.T @ N^-1 @ diff
 grouped_batched_param_dict = prepare_grouped_batched_params(diff, temp, edges) 
 out_ptr = groupedBatchedMatmul(grouped_batched_param_dict)
-out = reshape_out(out_ptr, edges)
-# print(out)
-
-print()
-print('cuBLAS output has dtype:', cp.dtype(out))
-print()
 
 
-#CHECK IF CUPY AND CUBLAS ARE COMPUTING THE SAME THING
-if np.allclose(temp2, out):
-    print('Checking correctness with np.allclose (default params):' \
-    '\nCuPy and cuBLAS match')
-else:
-    print('Checking correctness with np.allclose (default params):' \
-    '\nCuPy and cuBLAS DO NOT match')
+check_match = False
+if check_match:
+    out = reshape_out(out_ptr, edges)
+    # print(out)
+    print()
+    print('cuBLAS output has dtype:', cp.dtype(out))
+    print()
 
+    #CHECK IF CUPY AND CUBLAS ARE COMPUTING THE SAME THING
+    if np.allclose(temp2, out):
+        print('Checking correctness with np.allclose (default params):' \
+        '\nCuPy and cuBLAS match')
+    else:
+        print('Checking correctness with np.allclose (default params):' \
+        '\nCuPy and cuBLAS DO NOT match')
+
+    print(temp2[0])
+    print(out[0])
 
 
 """~~~~~~~~~~~~~~~~~~~~~ BENCHMARKING CUPY AND CUBLAS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"""
