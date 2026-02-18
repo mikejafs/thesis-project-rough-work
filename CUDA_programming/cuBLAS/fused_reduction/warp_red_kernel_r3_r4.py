@@ -1,3 +1,16 @@
+"""
+Working implimentation of the warp reduction kernel that computes the mnatrix product
+in the first application of the WB identity. Benchmarks against CuPy implimentation are
+included at the very bottom. Results show a roughly 10x improvement in speed over CuPy,
+which was already still faster than virtually any implimentation using cuBLAS given the 
+problem shape. 
+
+r3 and r4 kernels are hardcoded for either 3 or 4 eignemodes so this may have to change 
+in the future. Accompanying files in this directory were used to build up to these tests,
+and this file includes potentially very useful code in terms of the GPU implimentation 
+of CorrCal.
+"""
+
 import cupy as cp
 import numpy as np
 import sys
